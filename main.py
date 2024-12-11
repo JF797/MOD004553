@@ -6,6 +6,7 @@ import time
 import sys
 import random
 import os
+import re
 
 
 # difficulties. If 0 then 'Easy' mode is selected
@@ -18,6 +19,7 @@ def clearScreen():
     else:
         os.system("clear")
 
+# Don't think this is required.
 def generateWordLengthPossibility(words):
     longest = len(max(words, key=len))
     print(f'LONGEST: {max(words, key=len)}')
@@ -43,15 +45,14 @@ def generateSelectedWordList(desiredWordLength, wordList):
     for word in wordList:
         if len(word) == desiredWordLength:
             selectedWordList.append(word)
-    print(selectedWordList)
     return selectedWordList
 
 def pickWordFromWordList(wordListFileName):
     wordList = readDictionary(wordListFileName)
-    longestWordLength, shortestWordLength = generateWordLengthPossibility(wordList)
     print("Computer is selecting a word length")
+    # longestWordLength, shortestWordLength = generateWordLengthPossibility(wordList)
     # desiredWordLength=random.randint(shortestWordLength, longestWordLength)
-    desiredWordLength=27
+    desiredWordLength=random.randint(4, 12)
     print(f'Word length selected: {desiredWordLength}')
     print(f'Generating word list from length')
     selectedWordList = generateSelectedWordList(desiredWordLength, wordList)
@@ -79,7 +80,8 @@ def showInstructions():
           """)
     
 
-def showGameMenu():
+def showGameMenu(HARDMODE):
+    print(f'CURRENT DIFFICULTY MODE: {"HARD" if HARDMODE == True else "EASY"}')
     print("""Please select from one of the following options
           1 - Begin game.
           2 - Show rules.
@@ -107,14 +109,16 @@ def changeDifficulty(currentDifficulty):
                 print ("Difficulty mode already selected")
             else:
                 currentDifficulty = False
+                print(f'Difficulty mode changed to {'EASY' if currentDifficulty == False else 'HARD'}')
         case "2":
             if currentDifficulty == True:
                 print ("Difficulty mode already selected")
             else:
-                print(currentDifficulty)
                 currentDifficulty = True
+                print(f'Difficulty mode changed to {'EASY' if currentDifficulty == False else 'HARD'}')
         case "3":
-            sys.exit()
+            return
+    input("press enter to continue")
     return currentDifficulty
 
 
@@ -122,7 +126,7 @@ def getMenuOption(HARDMODE):
     menuIsSelected = False
     while menuIsSelected == False:
         clearScreen()
-        showGameMenu()
+        showGameMenu(HARDMODE)
         menuChoice = input("Please select an option.\n>>> ")
         match menuChoice:
             case "1":
@@ -131,10 +135,11 @@ def getMenuOption(HARDMODE):
             case "2":
                 showInstructions()
                 input("press enter to continue")
-                continue
+                getMenuOption(HARDMODE)
             case "3":
                 menuIsSelected=True
                 HARDMODE = changeDifficulty(HARDMODE)
+                getMenuOption(HARDMODE)
             case "4":
                 menuIsSelected=True
                 print("Exit game")
@@ -147,20 +152,64 @@ def getMenuOption(HARDMODE):
 def runningGame():
     print("Game starting")
     selectedWordList, selectedWord, desiredWordLength = pickWordFromWordList('dictionary.txt')
+    guessingArray=[] # Requires initialising first
+    print(f'for ref - selected word: {selectedWord}')
+    correctlyGuessedLetters=0
 
-    print (selectedWordList)
-    print (selectedWord)
-    print (desiredWordLength)
-    # wordList = readDictionary('dictionary.txt')
-    # longestWordLength, shortestWordLength = generateWordLengthPossibility(wordList)
-    # print("Computer is selecting a word length")
-    # desiredWordLength=random.randint(shortestWordLength, longestWordLength)
-    # print(f'Word length selected: {desiredWordLength}')
-    # print(f'Generating word list from length')
-    # selectedWordList = generateSelectedWordList(desiredWordLength, wordList)
-    # print ("computer is choosing word from list")
-    # selectedWord = pickWordFromWordList(selectedWordList)
-    # print (f'Selected Word: {selectedWord}')   
+    
+    def createGuessingArray(desiredWordLength):
+        for letter in range(0, desiredWordLength):
+            guessingArray.append('_')
+        return guessingArray
+
+    def displayGuessingArray (guessingArray):
+        for letter in guessingArray:
+            print(letter, end=" ")
+
+    
+    def playerGuess(guessedLetter, guessingArray, selectedWord, correctlyGuessedLetters):
+        print(type(correctlyGuessedLetters))
+        if guessedLetter in selectedWord:
+            print(f'Correct! The letter {guessedLetter} is in this word')
+            correctlyGuessedLetters=+1
+            print(f'correctlyGuessedLetters={correctlyGuessedLetters}')   
+            guessedLetterPosition=selectedWord.find(guessedLetter)
+            guessingArray[guessedLetterPosition]=guessedLetter
+            displayGuessingArray(guessingArray)
+        else:
+            print("Incorrect")
+
+
+    
+    
+    guessingArray = createGuessingArray(desiredWordLength)
+    displayGuessingArray(guessingArray)
+
+
+    while correctlyGuessedLetters != desiredWordLength:
+        guessOption=input("Please guess a letter.\n>>> ")
+        playerGuess(guessOption, guessingArray, selectedWord, correctlyGuessedLetters)
+        print(f'correctlyGuessedLetters={correctlyGuessedLetters}')
+
+
+        if not re.match("^[a-z]*$", guessOption) or len(guessOption) > 1 or guessOption == "":
+            print("Only single character letters of a-z are allowed")
+
+    print("game over")
+
+
+
+
+
+
+
+
+
+    displayGuessingArray(guessingArray)
+
+
+
+   
 
 
     
