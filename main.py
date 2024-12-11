@@ -3,28 +3,95 @@
 
 # imports
 import time
+import sys
+import random
+import os
 
 
 # difficulties. If 0 then 'Easy' mode is selected
 HARDMODE=False
 
-# def showInstructions():
-    
+def clearScreen():
+    if os.name == 'nt':
+        print("clearing screen")
+        os.system("cls")
+    else:
+        os.system("clear")
+
+def generateWordLengthPossibility(words):
+    longest = len(max(words, key=len))
+    print(f'LONGEST: {max(words, key=len)}')
+    shortest = len(min(words, key=len))
+    print(f'SHORTEST: {min(words, key=len)}')
+    return longest, shortest
+
+def readDictionary(filename):
+    print(f'Reading word list from file name: {filename}')
+    wordList= []
+    try:
+        with open (filename, "r") as dictionaryFile:
+            for word in dictionaryFile:
+                wordList.append(word.strip())
+        return wordList
+    except(FileNotFoundError):
+        print("File not found in directory of this program. Please correct this\nProgram will now exit.")
+        sys.exit()
+
+
+def generateSelectedWordList(desiredWordLength, wordList):
+    selectedWordList = []
+    for word in wordList:
+        if len(word) == desiredWordLength:
+            selectedWordList.append(word)
+    print(selectedWordList)
+    return selectedWordList
+
+def pickWordFromWordList(wordListFileName):
+    wordList = readDictionary(wordListFileName)
+    longestWordLength, shortestWordLength = generateWordLengthPossibility(wordList)
+    print("Computer is selecting a word length")
+    # desiredWordLength=random.randint(shortestWordLength, longestWordLength)
+    desiredWordLength=27
+    print(f'Word length selected: {desiredWordLength}')
+    print(f'Generating word list from length')
+    selectedWordList = generateSelectedWordList(desiredWordLength, wordList)
+    print ("computer is choosing word from list")
+    selectedWord = selectedWordList[random.randint(0, len(selectedWordList))]
+    print (f'Selected Word: {selectedWord}')   
+    return selectedWordList, selectedWord, desiredWordLength
+
+def showInstructions():
+    x = 0
+    print(f"""The rules of the game are as follows:
+          Player 1 - You.
+          Player 2 - The computer.
+          
+          The computer  will choose a word from a set dictionary containing {x} words.
+          Player 1 will then begin guessing the word that has been selected.
+          Every correct letter guessed will reveal on the screen, allowing you to better guess the word.
+          The game ends when either all the letters in the word have been guessed, or Player 1 has run out of guesses.
+          The number of guesses will depend on the length of the word.
+          
+          Hard mode:
+          Each turn, the computer will keep a list of "possible" words to choose from based on the length of the word.
+          At any point in time, the computer can change the word selected from the named list, if the letters guessed will get them closer to losing.
+          The idea of this is to prolong the game and make player 1 run out of guesses quicker.
+          """)
     
 
 def showGameMenu():
     print("""Please select from one of the following options
           1 - Begin game.
-          2 - Show information.
+          2 - Show rules.
           3 - Choose difficulty.
           4 - Exit game.""")
-
+         
 
 
 # introduction to the code, this will run as soon as the program starts.
-def introduction():
+def introduction(HARDMODE):
     print("Welcome to the word guessing game!")
-    print(f'CURRENT DIFFICULTY MODE: {"EASY" if HARDMODE == False else "HARD"}')
+    print(f'CURRENT DIFFICULTY MODE: {"HARD" if HARDMODE == True else "EASY"}')
     
 
 def changeDifficulty(currentDifficulty):
@@ -39,41 +106,69 @@ def changeDifficulty(currentDifficulty):
             if currentDifficulty == False:
                 print ("Difficulty mode already selected")
             else:
-                return HARDMODE = False
+                currentDifficulty = False
         case "2":
             if currentDifficulty == True:
                 print ("Difficulty mode already selected")
             else:
-                return HARDMODE = True
+                print(currentDifficulty)
+                currentDifficulty = True
         case "3":
-            return
+            sys.exit()
+    return currentDifficulty
 
 
-def getMenuOption(menuChoice, HARDMODE):
-    match menuChoice:
-        case "1":
-            print(" Game starting")
-            
-        case "2":
-            print("Show information")
-            
-        case "3":
-            print("Choose difficultiy")
-            HARDMODE = changeDifficulty(HARDMODE)
-            main()
-            
-        case "4":
-            print("Exit game")
-            exit()
-        case _:
-            print("Not a valid option")
-            getMenuOption(menuChoice)
+def getMenuOption(HARDMODE):
+    menuIsSelected = False
+    while menuIsSelected == False:
+        clearScreen()
+        showGameMenu()
+        menuChoice = input("Please select an option.\n>>> ")
+        match menuChoice:
+            case "1":
+                menuIsSelected=True
+                runningGame()
+            case "2":
+                showInstructions()
+                input("press enter to continue")
+                continue
+            case "3":
+                menuIsSelected=True
+                HARDMODE = changeDifficulty(HARDMODE)
+            case "4":
+                menuIsSelected=True
+                print("Exit game")
+                sys.exit()
+            case _:
+                print("Not a valid option")
+                continue
+    
+    
+def runningGame():
+    print("Game starting")
+    selectedWordList, selectedWord, desiredWordLength = pickWordFromWordList('dictionary.txt')
+
+    print (selectedWordList)
+    print (selectedWord)
+    print (desiredWordLength)
+    # wordList = readDictionary('dictionary.txt')
+    # longestWordLength, shortestWordLength = generateWordLengthPossibility(wordList)
+    # print("Computer is selecting a word length")
+    # desiredWordLength=random.randint(shortestWordLength, longestWordLength)
+    # print(f'Word length selected: {desiredWordLength}')
+    # print(f'Generating word list from length')
+    # selectedWordList = generateSelectedWordList(desiredWordLength, wordList)
+    # print ("computer is choosing word from list")
+    # selectedWord = pickWordFromWordList(selectedWordList)
+    # print (f'Selected Word: {selectedWord}')   
+
+
     
 
-def main():
-    introduction()
-    showGameMenu()
-    menuChoice = input("Please select an option.\n>>> ")
-    menuChoice = getMenuOption(menuChoice, HARDMODE)
-    
-main()
+def main(HARDMODE):
+    introduction(HARDMODE)
+    getMenuOption(HARDMODE)
+
+
+
+main(HARDMODE)
