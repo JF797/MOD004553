@@ -152,9 +152,11 @@ def getMenuOption(HARDMODE):
 def runningGame():
     print("Game starting")
     selectedWordList, selectedWord, desiredWordLength = pickWordFromWordList('dictionary.txt')
+    print(selectedWordList)
     guessingArray=[] # Requires initialising first
     print(f'for ref - selected word: {selectedWord}')
     correctlyGuessedLetters=0
+    numberOfGuesses=len(selectedWord)*2
 
     
     def createGuessingArray(desiredWordLength):
@@ -162,40 +164,122 @@ def runningGame():
             guessingArray.append('_')
         return guessingArray
 
-    def displayGuessingArray (guessingArray):
+    def displayGuessingArray(guessingArray):
         for letter in guessingArray:
             print(letter, end=" ")
 
-    
-    def playerGuess(guessedLetter, guessingArray, selectedWord, correctlyGuessedLetters):
-        print(type(correctlyGuessedLetters))
-        if guessedLetter in selectedWord:
-            print(f'Correct! The letter {guessedLetter} is in this word')
-            correctlyGuessedLetters=+1
-            print(f'correctlyGuessedLetters={correctlyGuessedLetters}')   
-            guessedLetterPosition=selectedWord.find(guessedLetter)
-            guessingArray[guessedLetterPosition]=guessedLetter
-            displayGuessingArray(guessingArray)
+    def checkIfGuessedLetterIsInWord(guessOption, selectedWord):
+        if guessOption in selectedWord:
+            return True
         else:
-            print("Incorrect")
+            return False
+        
+    def guessedCorrectly(guessOption, selectedWord, guessingArray):
+        guessedLetterPosition=selectedWord.find(guessOption)
+        guessingArray[guessedLetterPosition]=guessOption
+        return guessingArray
+    
+    def guessedCorrectlyMultiple(guessOption, selectedWord, guessingArray):
+        for x in range(0, len(selectedWord)):
+            if selectedWord[x] == guessOption:
+                guessingArray[x] = guessOption
+        return guessingArray
 
+    def checkForMultipleLettersInWordForGuess(guessOption, selectedWord):
+        if selectedWord.count(guessOption) > 1:
+            return True
+        else:
+            return False
+    
+    def checkIfWordHasBeenGuessedCorrectly(guessingArray, selectedWord):
+        if (''.join(guessingArray)) == selectedWord:
+            return True
+        else:
+            return False
 
+    def recalculateWordList(selectedWordList, guessingArray, wordListBank):
+        print(f'Guessing Array: {guessingArray}')
+
+        for words in selectedWordList:
+
+            if len(words) != len(guessingArray):
+                continue
+
+            match=True
+            for x in range(len(guessingArray)):
+                if guessingArray[x] != '_' and guessingArray[x] !=words[x]:
+                    match = False
+                    break 
+
+            if match == True:
+                print(words)
+                wordListBank.append(words)
+        print(wordListBank)
+        return wordListBank
     
     
     guessingArray = createGuessingArray(desiredWordLength)
-    displayGuessingArray(guessingArray)
+
+    # Array for guessed letters, as we cannot compare this to the guessingArray as the user shouldn't be able to guess the same wrong answer twice.
+    guessedLetters=[]
+    wordListBank=[]
 
 
-    while correctlyGuessedLetters != desiredWordLength:
+    while numberOfGuesses != 0:
+        print(f'DesiredWordLength={desiredWordLength}\ncorrectlyGuessedLetters={correctlyGuessedLetters}')
+        displayGuessingArray(guessingArray)
+        print(f'Remaining Guesses: {numberOfGuesses}')
         guessOption=input("Please guess a letter.\n>>> ")
-        playerGuess(guessOption, guessingArray, selectedWord, correctlyGuessedLetters)
-        print(f'correctlyGuessedLetters={correctlyGuessedLetters}')
 
-
+        # Validate user input for a-z characters using regex
         if not re.match("^[a-z]*$", guessOption) or len(guessOption) > 1 or guessOption == "":
             print("Only single character letters of a-z are allowed")
+        
+        # Finish the game if the number of guesses reaches 0
+        elif numberOfGuesses == 0:
+            print('Sorry, you have no more guesses')
+            break
 
-    print("game over")
+        # Check if that letter has already been guessed
+        elif guessOption in guessedLetters:
+            print(f'The letter: {guessOption} has already been guessed. But you wont lose a point')
+
+        # Criterion after input has been validated
+        else:
+            numberOfGuesses-=1
+
+            # Check to see if the guessed letter is in the word
+            if checkIfGuessedLetterIsInWord(guessOption, selectedWord) == True:
+                print("correct")
+                
+                # Add the correctly guessed letter to the guessing array if there are multiple instances
+                if checkForMultipleLettersInWordForGuess(guessOption, selectedWord) == True:
+                    guessingArray=guessedCorrectlyMultiple(guessOption, selectedWord, guessingArray)
+                
+                # Otherwise just add it once
+                else:   
+                    guessingArray=guessedCorrectly(guessOption, selectedWord, guessingArray)
+                    correctlyGuessedLetters+=1
+
+            else:
+                print(f'The letter: {guessOption} is not in this word. Try again.')
+                
+            wordListBank=recalculateWordList(selectedWordList, guessingArray, wordListBank)
+
+
+            
+            if checkIfWordHasBeenGuessedCorrectly(guessingArray, selectedWord) == True:
+                print(f'You won! The word was: {selectedWord}')
+                print('The game will now exit')
+                exit()
+            
+
+
+        # Add the guessed letter to the guessedLetters array for checking
+        guessedLetters.append(guessOption)
+
+    print("Game over: you are out of guesses!")
+
 
 
 
