@@ -131,7 +131,7 @@ def getMenuOption(HARDMODE):
         match menuChoice:
             case "1":
                 menuIsSelected=True
-                runningGame()
+                runningGame(HARDMODE)
             case "2":
                 showInstructions()
                 input("press enter to continue")
@@ -149,10 +149,9 @@ def getMenuOption(HARDMODE):
                 continue
     
     
-def runningGame():
+def runningGame(HARDMODE):
     print("Game starting")
     selectedWordList, selectedWord, desiredWordLength = pickWordFromWordList('dictionary.txt')
-    print(selectedWordList)
     guessingArray=[] # Requires initialising first
     print(f'for ref - selected word: {selectedWord}')
     correctlyGuessedLetters=0
@@ -180,10 +179,12 @@ def runningGame():
         return guessingArray
     
     def guessedCorrectlyMultiple(guessOption, selectedWord, guessingArray):
+        duplicateCharacters = 0
         for x in range(0, len(selectedWord)):
             if selectedWord[x] == guessOption:
                 guessingArray[x] = guessOption
-        return guessingArray
+                duplicateCharacters += 1
+        return guessingArray, duplicateCharacters
 
     def checkForMultipleLettersInWordForGuess(guessOption, selectedWord):
         if selectedWord.count(guessOption) > 1:
@@ -197,27 +198,42 @@ def runningGame():
         else:
             return False
 
+    # Used for hardmode function
     def recalculateWordList(selectedWordList, guessingArray, wordListBank):
-        print(f'Guessing Array: {guessingArray}')
-
+        # Iterate through all the words in the selected word list
         for words in selectedWordList:
-
-            if len(words) != len(guessingArray):
-                continue
-
-            match=True
-            for x in range(len(guessingArray)):
-                if guessingArray[x] != '_' and guessingArray[x] !=words[x]:
-                    match = False
+            # By default, set all words as matched, and then if they don't reach the criterion, don't include them.
+            wordMatched=True
+            # For each word, check to make sure these do not match the remaining letters in a word we are looking for
+            for wordLengthCounter in range(len(guessingArray)):
+                if guessingArray[wordLengthCounter] != '_' and guessingArray[wordLengthCounter] != words[wordLengthCounter]:
+                    wordMatched = False
                     break 
-
-            if match == True:
-                print(words)
+            # All the remaining matches are added to an additional word list bank
+            if wordMatched == True:
                 wordListBank.append(words)
-        print(wordListBank)
         return wordListBank
     
-    
+    # Used for hardmode function
+    def findMostUniqueWordBasedOnCharacterCost(wordListBank, guessingArray):
+        frequencyDictionary={}
+        for word in wordListBank:
+            for letters in word:
+                if letters in frequencyDictionary:
+                    frequencyDictionary[letters] += 1
+                else:
+                    frequencyDictionary[letters] = 1
+
+        # To avoid words being chosen with duplicate characters that have been guessed, give these letters a higher cost
+        def findLetterCosts(word):
+            letterCost=0
+            for letters in word:
+                letterCost += (1/(frequencyDictionary[letters] + 1))
+            return letterCost
+        
+        mostUniqueWord=min(wordListBank, key=findLetterCosts)
+        return mostUniqueWord
+
     guessingArray = createGuessingArray(desiredWordLength)
 
     # Array for guessed letters, as we cannot compare this to the guessingArray as the user shouldn't be able to guess the same wrong answer twice.
@@ -226,10 +242,10 @@ def runningGame():
 
 
     while numberOfGuesses != 0:
-        print(f'DesiredWordLength={desiredWordLength}\ncorrectlyGuessedLetters={correctlyGuessedLetters}')
+        duplicateCharacters = 0
         displayGuessingArray(guessingArray)
         print(f'Remaining Guesses: {numberOfGuesses}')
-        guessOption=input("Please guess a letter.\n>>> ")
+        guessOption=input("Please guess a letter.\n>>> ").lower()
 
         # Validate user input for a-z characters using regex
         if not re.match("^[a-z]*$", guessOption) or len(guessOption) > 1 or guessOption == "":
@@ -254,18 +270,24 @@ def runningGame():
                 
                 # Add the correctly guessed letter to the guessing array if there are multiple instances
                 if checkForMultipleLettersInWordForGuess(guessOption, selectedWord) == True:
-                    guessingArray=guessedCorrectlyMultiple(guessOption, selectedWord, guessingArray)
+                    guessingArray, duplicateCharacters=guessedCorrectlyMultiple(guessOption, selectedWord, guessingArray)
                 
                 # Otherwise just add it once
                 else:   
                     guessingArray=guessedCorrectly(guessOption, selectedWord, guessingArray)
                     correctlyGuessedLetters+=1
 
+                if HARDMODE == True:
+                    wordListBank=recalculateWordList(selectedWordList, guessingArray, wordListBank)
+                    nextPossibleWord=findMostUniqueWordBasedOnCharacterCost(wordListBank, guessingArray)
+                    print(f'most unique next word: {nextPossibleWord}')
+                    print(wordListBank)
+                    if nextPossibleWord != selectedWord:
+                        selectedWord = nextPossibleWord
+                        print("Computer has changed the word")
+
             else:
                 print(f'The letter: {guessOption} is not in this word. Try again.')
-                
-            wordListBank=recalculateWordList(selectedWordList, guessingArray, wordListBank)
-
 
             
             if checkIfWordHasBeenGuessedCorrectly(guessingArray, selectedWord) == True:
